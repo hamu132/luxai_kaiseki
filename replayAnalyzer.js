@@ -313,51 +313,52 @@ function renderReplayAnalysis(result) {
     };
 
     const createTeamHTML = (teamResult) => {
+        const row = (label, value) => `
+            <div
+                style="
+                    display: grid;
+                    grid-template-columns: 210px 12px 1fr;
+                    column-gap: 4px;
+                    margin-bottom: 4px;
+                    line-height: 1.5;
+                "
+            >
+                <span>${label}</span>
+                <span>:</span>
+                <span>${value}</span>
+            </div>
+        `;
+
         return `
             <div style="margin-bottom: 18px;">
                 <h3 style="margin-bottom: 8px;">
                     Team ${teamResult.team}
                 </h3>
 
-                <div>
-                    最初の木材採取:
-                    ${formatTurn(teamResult.firstWoodCollection)}
-                </div>
+                ${row("最初の木材採取",
+                    formatTurn(teamResult.firstWoodCollection))}
 
-                <div>
-                    石炭研究:
-                    ${formatTurn(teamResult.coalResearch)}
-                </div>
+                ${row("石炭研究（研究ポイント50）",
+                    formatTurn(teamResult.coalResearch))}
 
-                <div>
-                    最初の石炭採取:
-                    ${formatTurn(teamResult.firstCoalCollection)}
-                </div>
+                ${row("最初の石炭採取",
+                    formatTurn(teamResult.firstCoalCollection))}
 
-                <div>
-                    ウラン研究:
-                    ${formatTurn(teamResult.uraniumResearch)}
-                </div>
+                ${row("ウラン研究（研究ポイント200）",
+                    formatTurn(teamResult.uraniumResearch))}
 
-                <div>
-                    最初のウラン採取:
-                    ${formatTurn(teamResult.firstUraniumCollection)}
-                </div>
+                ${row("最初のウラン採取",
+                    formatTurn(teamResult.firstUraniumCollection))}
 
-                <div>
-                    最初のCity建設:
-                    ${formatTurn(teamResult.firstCityBuilt)}
-                </div>
+                ${row("最初のCity建設",
+                    formatTurn(teamResult.firstCityBuilt))}
 
-                <div>
-                    最大Worker数:
-                    ${
-                        teamResult.maxWorkers
-                            ? `${teamResult.maxWorkers.workers}
-                               (Turn ${teamResult.maxWorkers.turn})`
-                            : "-"
-                    }
-                </div>
+                ${row(
+                    "最大Worker数",
+                    teamResult.maxWorkers
+                        ? `${teamResult.maxWorkers.workers} (Turn ${teamResult.maxWorkers.turn})`
+                        : "-"
+                )}
             </div>
         `;
     };
