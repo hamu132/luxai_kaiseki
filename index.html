@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lux AI Replay Viewer</title>
+</head>
+
+<body>
+
+<input type="file" id="fileInput">
+
+<pre id="output"></pre>
+
+<script>
+const fileInput = document.getElementById("fileInput");
+const output = document.getElementById("output");
+
+fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+
+    if (!file) {
+        return;
+    }
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    const response = await fetch("http://localhost:8000/upload", {
+        method: "POST",
+        body: formData
+    });
+
+    const data = await response.json();
+
+    output.textContent = data.content;
+});
+</script>
+
+</body>
+</html>
