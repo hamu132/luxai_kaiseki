@@ -281,7 +281,7 @@ function renderReplayAnalysis(result) {
             top: "60px",
             right: "20px",
 
-            width: "300px",
+            width: "400px",
 
             padding: "0",
 
