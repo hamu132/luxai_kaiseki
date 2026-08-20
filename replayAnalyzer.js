@@ -283,7 +283,7 @@ function renderReplayAnalysis(result) {
 
             width: "300px",
 
-            padding: "16px",
+            padding: "0",
 
             background: "rgba(0, 0, 0, 0.80)",
             color: "white",
@@ -296,10 +296,12 @@ function renderReplayAnalysis(result) {
             zIndex: "99999",
 
             maxHeight: "80vh",
-            overflowY: "auto",
+            overflow: "hidden",
         });
 
         document.body.appendChild(panel);
+
+        enableDrag(panel);
     }
 
     const formatTurn = (event) => {
@@ -351,7 +353,7 @@ function renderReplayAnalysis(result) {
                     最大Worker数:
                     ${
                         teamResult.maxWorkers
-                            ? `${teamResult.maxWorkers.workers} 
+                            ? `${teamResult.maxWorkers.workers}
                                (Turn ${teamResult.maxWorkers.turn})`
                             : "-"
                     }
@@ -361,16 +363,87 @@ function renderReplayAnalysis(result) {
     };
 
     panel.innerHTML = `
-        <h2 style="margin-top: 0;">
+        <div
+            id="replay-analysis-header"
+            style="
+                padding: 12px 16px;
+                cursor: move;
+                user-select: none;
+                font-weight: bold;
+                border-bottom: 1px solid rgba(255,255,255,0.2);
+            "
+        >
             Replay Analysis
-        </h2>
+        </div>
 
-        ${createTeamHTML(result.teams[0])}
-        ${createTeamHTML(result.teams[1])}
+        <div
+            style="
+                padding: 16px;
+                max-height: calc(80vh - 50px);
+                overflow-y: auto;
+            "
+        >
+            ${createTeamHTML(result.teams[0])}
+            ${createTeamHTML(result.teams[1])}
+        </div>
     `;
 }
 
+function enableDrag(panel) {
+    let isDragging = false;
 
+    let offsetX = 0;
+    let offsetY = 0;
+
+    panel.addEventListener("mousedown", (event) => {
+        const header = event.target.closest("#replay-analysis-header");
+
+        if (!header) {
+            return;
+        }
+
+        isDragging = true;
+
+        const rect = panel.getBoundingClientRect();
+
+        offsetX = event.clientX - rect.left;
+        offsetY = event.clientY - rect.top;
+
+        // right指定を解除
+        panel.style.right = "auto";
+
+        document.body.style.userSelect = "none";
+    });
+
+    document.addEventListener("mousemove", (event) => {
+        if (!isDragging) {
+            return;
+        }
+
+        let x = event.clientX - offsetX;
+        let y = event.clientY - offsetY;
+
+        // 画面外に行かないように制限
+        const maxX = window.innerWidth - panel.offsetWidth;
+        const maxY = window.innerHeight - panel.offsetHeight;
+
+        x = Math.max(0, Math.min(x, maxX));
+        y = Math.max(0, Math.min(y, maxY));
+
+        panel.style.left = `${x}px`;
+        panel.style.top = `${y}px`;
+    });
+
+    document.addEventListener("mouseup", () => {
+        if (!isDragging) {
+            return;
+        }
+
+        isDragging = false;
+
+        document.body.style.userSelect = "";
+    });
+}
 // app.js からアクセスできるようにする
 window.ReplayAnalyzer = ReplayAnalyzer;
 window.renderReplayAnalysis = renderReplayAnalysis;
