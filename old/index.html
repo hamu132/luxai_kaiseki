@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lux AI Replay Viewer</title>
+</head>
+
+<body>
+
+<h1>Lux AI Replay Analysis</h1>
+
+<input type="file" id="fileInput">
+
+<div id="output"></div>
+
+<script>
+const fileInput = document.getElementById("fileInput");
+const output = document.getElementById("output");
+
+fileInput.addEventListener("change", async () => {
+    const file = fileInput.files[0];
+
+    if (!file) {
+        return;
+    }
+
+    output.textContent = "解析中...";
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+        const response = await fetch("http://localhost:8000/upload", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        if (data.error) {
+            output.textContent = `エラー: ${data.error}`;
+            return;
+        }
+
+        const player0Turn = data.first_city_build["0"];
+        const player1Turn = data.first_city_build["1"];
+
+        output.innerHTML = `
+            <h2>解析結果</h2>
+
+            <p>Player 0：${formatTurn(player0Turn)}</p>
+            <p>Player 1：${formatTurn(player1Turn)}</p>
+        `;
+
+    } catch (error) {
+        output.textContent =
+            `通信エラー: ${error.message}`;
+    }
+});
+
+
+function formatTurn(turn) {
+    if (turn === null) {
+        return "都市建設なし";
+    }
+
+    return `Turn ${turn}`;
+}
+</script>
+
+</body>
+</html>

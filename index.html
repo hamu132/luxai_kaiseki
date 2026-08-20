@@ -1,73 +1,1367 @@
 <!DOCTYPE html>
-<html lang="ja">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Lux AI Replay Viewer</title>
-</head>
-
-<body>
-
-<h1>Lux AI Replay Analysis</h1>
-
-<input type="file" id="fileInput">
-
-<div id="output"></div>
-
-<script>
-const fileInput = document.getElementById("fileInput");
-const output = document.getElementById("output");
-
-fileInput.addEventListener("change", async () => {
-    const file = fileInput.files[0];
-
-    if (!file) {
-        return;
-    }
-
-    output.textContent = "解析中...";
-
-    const formData = new FormData();
-    formData.append("file", file);
-
-    try {
-        const response = await fetch("http://localhost:8000/upload", {
-            method: "POST",
-            body: formData
-        });
-
-        const data = await response.json();
-
-        if (data.error) {
-            output.textContent = `エラー: ${data.error}`;
-            return;
-        }
-
-        const player0Turn = data.first_city_build["0"];
-        const player1Turn = data.first_city_build["1"];
-
-        output.innerHTML = `
-            <h2>解析結果</h2>
-
-            <p>Player 0：${formatTurn(player0Turn)}</p>
-            <p>Player 1：${formatTurn(player1Turn)}</p>
-        `;
-
-    } catch (error) {
-        output.textContent =
-            `通信エラー: ${error.message}`;
-    }
-});
-
-
-function formatTurn(turn) {
-    if (turn === null) {
-        return "都市建設なし";
-    }
-
-    return `Turn ${turn}`;
+<!-- saved from url=(0027)https://2021vis.lux-ai.org/ -->
+<html lang="en" style="font-size: 8pt;"><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"><title>Lux AI Challenge Viewer</title><meta name="viewport" content="width=device-width,initial-scale=1,user-scalable=no"><link rel="icon" href="https://2021vis.lux-ai.org/icon.png"><meta name="HandheldFriendly" content="True"><meta name="MobileOptimized" content="320"><meta http-equiv="cleartype" content="on"><meta name="format-detection" content="telephone=no"><link rel="preconnect" href="https://fonts.gstatic.com/"><link href="./css2" rel="stylesheet"><style>html,
+      body {
+        margin: 0;
+        padding: 0;
+      }</style><style>.Game {
+  background-color: #00afbd;
+  height: 100%;
+  width: 100%;
+  position: relative;
+  display: inline-block;
+  /* overflow: hidden; */
 }
-</script>
 
-</body>
-</html>
+#content canvas {
+  position: absolute;
+  top: 0;
+  margin: 0;
+  background-color: #00afbd;
+  transition: background-color linear 1s;
+}
+
+.Game .zoom-in-out {
+  position: absolute;
+  top: 1.5rem;
+  left: 1rem;
+}
+
+.Game .global-stats {
+  position: absolute;
+  background-color: white;
+  margin: auto;
+  right: 2rem;
+  width: 16rem;
+}
+.Game .global-stats-wrapper {
+  position: absolute;
+  right: 2.25rem;
+  top: 8rem;
+}
+
+.Game .tile-stats-wrapper {
+  position: absolute;
+  left: 2rem;
+  top: 8rem;
+}
+
+.Game .upload-icon-no-replay {
+  width: 3rem;
+}
+.Game .upload-no-replay-wrapper > p {
+  padding-left: 2rem;
+  padding-right: 2rem;
+}
+.Game .upload-no-replay-wrapper > div > .upload-btn .upload-text {
+  margin-right: 1rem;
+}
+.Game .upload-no-replay-wrapper > div > .upload-btn {
+  font-size: 1.5rem;
+  color: white;
+}
+.Game .upload-no-replay-wrapper > p {
+  font-size: 2rem;
+  color: white;
+}
+.Game .upload-no-replay-wrapper > div {
+  width: 100%;
+}
+.Game .upload-no-replay-wrapper {
+  width: 100%;
+  height: 100%;
+  text-align: center;
+  display: flex;
+  align-content: center;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+}
+
+.Game .phaser-wrapper {
+  display: none;
+}
+.Game .gameContainer .phaser-wrapper.Loading #content {
+  display: none;
+}
+
+.Game .play-buttons {
+  margin-top: 1rem;
+}
+.Game .play-buttons .play {
+  margin-right: 1rem;
+  vertical-align: top;
+}
+
+.Game .debug-mode-button-wrapper {
+  position: absolute;
+  bottom: 1rem;
+  right: 2rem;
+  color: #323d34;
+  background-color: #f9efe2;
+  padding: 1rem;
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-radius: 1rem;
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+}
+.Game .debug-mode-button-wrapper .MuiTypography-body1 {
+  font-weight: 600;
+}
+
+.Game .map-meta-wrapper {
+  position: absolute;
+  left: 50%;
+  transform: translate(-50%, 0);
+}
+
+.Game #version-number {
+  position: absolute;
+  right: 1rem;
+  top: 1rem;
+  background-color: rgba(50, 61, 52, 0.1);
+  padding: 0.5rem;
+  border-radius: 1rem;
+  /* height: 1.5rem; */
+  /* line-height: 1.5rem; */
+}
+
+.Game .debug-sidetext {
+  position: absolute;
+  right: 30rem;
+  top: 4.5rem;
+  background-color: rgba(50, 61, 52, 0.1);
+  padding: 1rem;
+  border-radius: 1rem;
+  font-size: 1.1rem;
+  max-width: 10rem;
+}
+.Game .debug-sidetext h4 {
+  margin-top: 0.5rem;
+  margin-bottom: 0.5rem;
+}
+.Game .debug-sidetext .sidetext-0 {
+  color: #f3a400;
+}
+.Game .debug-sidetext .sidetext-1 {
+  color: #3686ff;
+}
+.Game .warnings-button {
+  position: absolute;
+  top: 1rem;
+  right: 12rem;
+  background-color: rgba(255, 255, 255, 0.25);
+  border-radius: 1rem;
+  color: white;
+  font-weight: 500;
+  width: 14rem;
+}
+</style><style>.TileStats {
+  overflow-y: auto;
+  max-height: calc(100vh - 8rem);
+}
+.TileStats .LuxCard {
+  width: 24rem;
+}
+.TileStats .LuxCard .title {
+  margin-bottom: 0;
+}
+.TileStats .sub-header {
+  font-weight: 500;
+  font-size: 1.75rem;
+  text-align: center;
+  padding: 1rem;
+  margin-bottom: 0rem;
+}
+.TileStats .sub-header .coords-label {
+  font-size: 0.85rem;
+  margin-bottom: 0.25rem;
+}
+.TileStats .sub-header span {
+  padding: 0.75rem;
+  border-radius: 1rem;
+  display: inline-block;
+  background-color: rgba(50, 61, 52, 0.1);
+}
+.TileStats .subtitle {
+  font-size: 1.25rem;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 1.5rem;
+}
+.TileStats .subtitle:before {
+  transform: translate(10%, 2rem);
+  display: block;
+  content: '';
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(50, 61, 52, 0.2) 51.04%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  height: 0.325rem;
+  width: calc(80%);
+}
+.TileStats .resources {
+  font-size: 1rem;
+  align-items: center;
+  font-weight: 500;
+  width: calc(100% - 8rem);
+  margin-left: 4rem;
+  margin-bottom: 0.25rem;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(50, 61, 52, 0.1) 51.04%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+.TileStats .tile-pos {
+  font-size: 1.25rem;
+  font-weight: 500;
+}
+.TileStats .resources .resource-icon {
+  margin-right: 0.75rem;
+  margin-left: 0.75rem;
+  height: 1.5rem;
+  margin-top: 0.25rem;
+  vertical-align: middle;
+}
+.TileStats .resources .resource-name {
+  text-transform: capitalize;
+}
+.TileStats .resources .resource-name,
+.TileStats .resources .resource-amount {
+  font-weight: 500;
+  line-height: 2rem;
+}
+.TileStats .resources .resource-icon-wrapper {
+  float: right;
+}
+.TileStats .resources .resource-amount {
+  float: right;
+}
+
+.TileStats .roadlevel {
+  font-size: 1rem;
+  font-weight: 500;
+  margin-left: 4rem;
+  width: calc(100% - 8rem);
+}
+.TileStats .roadlevel p span {
+  float: right;
+}
+
+.TileStats .tracked-unit-card .UnitCard {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+</style><style>.UnitCard {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  position: relative;
+  padding: 0.5rem;
+  border-radius: 1rem;
+  transition: all 0.3s;
+  cursor: pointer;
+}
+.UnitCard .unit-id {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+.UnitCard .unit-id:before {
+  content: '';
+  position: absolute;
+  margin-top: 1.38rem;
+  background: rgba(50, 61, 52, 0.1);
+  height: 0.325rem;
+  width: calc(100% - 1rem);
+}
+.UnitCard .worker-icon-wrapper {
+  display: inline-block;
+  width: 3.5rem;
+  margin-right: 1rem;
+}
+.UnitCard .worker-icon-wrapper img {
+  width: 4rem;
+}
+.UnitCard .worker-data {
+  display: inline-block;
+  width: 6rem;
+}
+.UnitCard .worker-data p {
+  margin: 0px;
+  font-size: 0.85rem;
+  padding: 0.25rem;
+}
+.UnitCard .worker-data p span {
+  float: right;
+}
+.UnitCard .worker-data p:nth-child(even) {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(50, 61, 52, 0.1) 51.04%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+.UnitCard .cooldown-bar-wrapper {
+  width: 100%;
+  margin-top: 1rem;
+}
+.UnitCard .cooldown-value-wrapper {
+  margin-bottom: 0.25rem;
+}
+.UnitCard .cooldown-bar {
+  width: 100%;
+  border-radius: 1rem;
+  height: 8px;
+  background-color: rgba(50, 61, 52, 0.2);
+}
+.UnitCard .cooldown-title {
+  font-weight: 500;
+}
+.UnitCard .cooldown-value {
+  float: right;
+}
+.UnitCard .cooldown-b .MuiLinearProgress-barColorPrimary {
+  background-color: #f3a400;
+}
+.UnitCard .cooldown-b .MuiLinearProgress-barColorPrimary {
+  background-color: #3686ff;
+}
+
+.UnitCard .unit-history-button {
+  position: absolute;
+  top: 0rem;
+  right: 0rem;
+}
+
+.UnitCard .unit-history-icon {
+  height: 1rem;
+}
+.UnitCard .unit-history-button.MuiIconButton-root {
+  padding: 0.6rem;
+}
+#unit-history-modal {
+  position: absolute !important;
+  z-index: 1300;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%);
+  bottom: auto !important;
+  right: auto !important;
+}
+#unit-history-panel {
+  width: 50rem;
+  padding: 2rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 1rem;
+}
+#unit-history-panel .command-row {
+  display: flex;
+  height: 2rem;
+  position: relative;
+  align-items: center;
+  margin: 0;
+}
+#unit-history-panel #unit-history-content div:nth-child(odd) .command-row {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+#unit-history-panel-title {
+  text-align: center;
+  font-weight: 700;
+}
+#unit-history-unit-icon-wrapper {
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+#unit-history-unit-icon-wrapper img {
+  height: 3rem;
+}
+#unit-history-content {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+#unit-history-close-button {
+  background-color: #f9efe2;
+  position: absolute;
+  top: -1.25rem;
+  right: -1.25rem;
+  color: #002326;
+}
+#unit-history-close-button {
+  padding: 0.25rem;
+}
+#unit-history-close-button svg {
+  height: 2rem;
+  width: 2rem;
+  font-size: 2rem;
+}
+</style><style>.LuxCard {
+  /* background: #00afbd; */
+  width: 22rem;
+  min-height: 6rem;
+  border-radius: 1rem;
+  /* box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25); */
+  display: inline-block;
+  padding: 1.5rem;
+  margin-top: 0.15rem;
+  padding-top: 0.5rem;
+  /* background: url('bg.svg'); */
+  /* background: linear-gradient(
+    90deg,
+    rgba(0, 175, 189, 0) 0%,
+    rgba(0, 175, 189, 0.5) 40%,
+    rgba(0, 175, 189, 0.5) 60%,
+    rgba(0, 175, 189, 0) 100%
+  ); */
+}
+.LuxCard > .title {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #f9efe2;
+  text-align: center;
+  margin-top: 2rem;
+  padding-top: 0.75rem;
+  padding-bottom: 0.75rem;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 7.29%,
+    rgba(50, 61, 52, 0.2) 49.48%,
+    rgba(0, 0, 0, 0) 91.67%
+  );
+}
+</style><style>.CityStatsCard {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  position: relative;
+}
+.CityStatsCard .city-id {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+.CityStatsCard .city-id:before {
+  content: '';
+  position: absolute;
+  margin-top: 18px;
+  background: rgba(50, 61, 52, 0.1);
+  height: 4px;
+  width: calc(100%);
+}
+.CityStatsCard .worker-icon-wrapper {
+  display: inline-block;
+  width: 4rem;
+  margin-right: 1rem;
+}
+.CityStatsCard .worker-icon-wrapper img {
+  width: 4rem;
+}
+.CityStatsCard .worker-data {
+  display: inline-block;
+  width: 18rem;
+}
+.CityStatsCard .worker-data p {
+  margin: 0px;
+  font-size: 1rem;
+  padding: 0.5rem;
+}
+.CityStatsCard .worker-data p span {
+  float: right;
+}
+.CityStatsCard .worker-data p:nth-child(even) {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(50, 61, 52, 0.1) 51.04%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+</style><style>.CityTileCard {
+  display: flex;
+  align-items: center;
+  margin-bottom: 2rem;
+  flex-wrap: wrap;
+  position: relative;
+}
+.CityTileCard .unit-id {
+  width: 100%;
+  margin-bottom: 1rem;
+}
+.CityTileCard .unit-id:before {
+  content: '';
+  position: absolute;
+  margin-top: 1.38rem;
+  background: rgba(50, 61, 52, 0.1);
+  height: 0.325rem;
+  width: calc(100%);
+}
+.CityTileCard .worker-icon-wrapper {
+  display: inline-block;
+  width: 4rem;
+  margin-right: 1rem;
+}
+.CityTileCard .worker-icon-wrapper img {
+  width: 4rem;
+}
+.CityTileCard .worker-data {
+  display: inline-block;
+  width: 6rem;
+}
+.CityTileCard .worker-data p {
+  margin: 0px;
+  font-size: 0.85rem;
+  padding: 0.25rem;
+}
+.CityTileCard .worker-data p span {
+  float: right;
+}
+.CityTileCard .worker-data p:nth-child(even) {
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(50, 61, 52, 0.1) 51.04%,
+    rgba(0, 0, 0, 0) 100%
+  );
+}
+.CityTileCard .cooldown-bar-wrapper {
+  width: calc(100% - 5rem);
+}
+.CityTileCard .cooldown-value-wrapper {
+  margin-bottom: 0.25rem;
+}
+.CityTileCard .cooldown-bar {
+  width: 100%;
+  border-radius: 1rem;
+  height: 8px;
+  background-color: rgba(50, 61, 52, 0.2);
+}
+.CityTileCard .cooldown-title {
+  font-weight: 500;
+}
+.CityTileCard .cooldown-value {
+  float: right;
+}
+.CityTileCard .cooldown-b .MuiLinearProgress-barColorPrimary {
+  background-color: #f3a400;
+}
+.CityTileCard .cooldown-b .MuiLinearProgress-barColorPrimary {
+  background-color: #3686ff;
+}
+</style><style>.GlobalStats {
+  overflow: hidden;
+  width: 35rem;
+  right: 0;
+  position: absolute;
+  text-align: right;
+}
+.GlobalStats .stats-wrapper {
+  transform: translateX(0rem);
+  transition: transform 0.4s;
+}
+.GlobalStats .LuxCard {
+  text-align: left;
+  padding: 0;
+  width: 25rem;
+  overflow: hidden;
+}
+/** add the card layering depth **/
+.GlobalStats .overall,
+.GlobalStats .resource-graph,
+.GlobalStats .Carosel {
+  padding-left: 1.5rem;
+  padding-right: 1.5rem;
+  border-bottom-right-radius: 1rem;
+  border-bottom-left-radius: 1rem;
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+}
+.GlobalStats .Carosel {
+  box-shadow: none;
+}
+.GlobalStats .cityTilesLabel,
+.GlobalStats .storedFuelLabel,
+.GlobalStats .researchPointsLabel {
+  position: absolute;
+  /* left: -2.5rem; */
+  left: 8.5rem;
+  font-size: 0.85rem;
+  top: 12.5rem;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(50, 61, 52, 0.1) 51.04%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  width: 29rem;
+  height: 2rem;
+  line-height: 2rem;
+  z-index: 1;
+  font-weight: 500;
+}
+.GlobalStats .storedFuelLabel {
+  top: 15rem;
+}
+.GlobalStats .researchPointsLabel {
+  top: 17.5rem;
+}
+.GlobalStats .teamLabel {
+  text-align: center;
+  position: relative;
+  z-index: 10;
+  font-weight: 500;
+}
+.GlobalStats .teamLabel .icons {
+  align-items: center;
+  display: flex;
+}
+.GlobalStats .teamLabel .icons img {
+  margin-right: 1rem;
+  height: 2.3rem;
+}
+.GlobalStats .teamLabel div {
+  margin-bottom: 0.75rem;
+}
+.GlobalStats .teamLabel .teamname {
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.GlobalStats .teamLabel .houses,
+.GlobalStats .teamLabel .collection,
+.GlobalStats .teamLabel .researchPoints {
+  align-items: center;
+  display: flex;
+  justify-content: center;
+  margin-bottom: 0.5rem;
+  height: 2rem;
+}
+.GlobalStats .teamLabel .houses img,
+.GlobalStats .teamLabel .collection img {
+  height: 3rem;
+}
+
+.GlobalStats .resource-graph {
+  margin-top: 1rem;
+}
+.GlobalStats .resource-graph .graph-legend {
+  display: inline-block;
+  width: 2.75rem;
+  margin-right: 0.5rem;
+}
+.GlobalStats .resource-graph .graph-legend img {
+  width: 30px;
+}
+.GlobalStats .resource-graph .graph-legend div {
+  padding-top: 13px;
+  margin-bottom: 13px;
+}
+.GlobalStats .resource-graph .title {
+  font-size: 1.25rem;
+  font-weight: 500;
+  text-align: center;
+  margin-bottom: 0.5rem;
+}
+.GlobalStats .resource-graph .title:before {
+  content: '';
+  position: absolute;
+  margin-top: 24px;
+  /* left: 10%; */
+  left: 8.5rem;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(50, 61, 52, 0.1) 51.04%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  height: 4px;
+  width: calc(80%);
+}
+.GlobalStats .resource-graph .graph {
+  width: calc(100% - 6rem);
+  display: inline-block;
+  position: relative;
+}
+.GlobalStats .resource-graph .graph .wood {
+  width: 100%;
+  position: relative;
+}
+.GlobalStats .resource-graph .graph .wood,
+.GlobalStats .resource-graph .graph .coal,
+.GlobalStats .resource-graph .graph .uranium {
+  width: 100%;
+  position: relative;
+  height: 14px;
+  margin-top: 2.5rem;
+}
+.GlobalStats .resource-graph .graph .bgbar,
+.GlobalStats .resource-graph .graph .team0bar,
+.GlobalStats .resource-graph .graph .team1bar {
+  height: 8px;
+  position: absolute;
+}
+.GlobalStats .resource-graph .graph .bgbar {
+  width: 100%;
+  background-color: #323d34;
+  opacity: 0.2;
+  border-top-right-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+}
+.GlobalStats .resource-graph .graph .team0bar {
+  background-color: #f3a400;
+}
+.GlobalStats .resource-graph .graph .team0bar > span,
+.GlobalStats .resource-graph .graph .team1bar > span {
+  position: absolute;
+  top: -20px;
+  width: 100%;
+  text-align: center;
+  font-weight: 500;
+}
+.GlobalStats .resource-graph .graph .team1bar {
+  background-color: #3686ff;
+  border-top-right-radius: 1rem;
+  border-bottom-right-radius: 1rem;
+}
+
+.GlobalStats .Carosel-Control .ArrowLeft,
+.GlobalStats .Carosel-Control .ArrowRight {
+  height: 2rem;
+  width: auto;
+  cursor: pointer;
+  opacity: 0.25;
+  transition: opacity 0.2s;
+}
+.GlobalStats .Carosel-Control .ArrowLeft:hover,
+.GlobalStats .Carosel-Control .ArrowRight:hover {
+  opacity: 1;
+}
+
+.GlobalStats .Carosel-Control .ArrowLeft,
+.GlobalStats .Carosel-Control .ArrowRight,
+.GlobalStats .Carosel-Control .chart-title {
+  display: inline-block;
+  margin-bottom: 0.5rem;
+}
+.GlobalStats .Carosel-Control .chart-title:before {
+  content: '';
+  position: absolute;
+  margin-top: 26px;
+  /* left: 10%; */
+  left: 8.5rem;
+  background: linear-gradient(
+    90deg,
+    rgba(0, 0, 0, 0) 0%,
+    rgba(50, 61, 52, 0.1) 51.04%,
+    rgba(0, 0, 0, 0) 100%
+  );
+  height: 4px;
+  width: calc(80%);
+}
+.GlobalStats .Carosel-Control {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 2rem;
+}
+.GlobalStats .Carosel-Control .chart-title {
+  width: 10rem;
+  text-align: center;
+  line-height: 2rem;
+  font-weight: 500;
+  font-size: 1.25rem;
+}
+.GlobalStats .toggle-stats {
+  position: absolute;
+  right: 24.5rem;
+  top: 33rem;
+  transition: transform 0.4s;
+  z-index: 9;
+}
+.GlobalStats .toggle-stats img {
+  background-color: rgba(0, 0, 0, 0.14);
+  width: 2rem;
+  height: 2rem;
+  padding: 0.65rem;
+  border-radius: 50%;
+  transition: transform 0.4s;
+}
+.GlobalStats .toggle-stats.hidden {
+  /* transform: rotate(180deg); */
+  transform: translateX(25rem) rotate(180deg);
+}
+
+.GlobalStats .stats-wrapper.hidden-card {
+  transform: translateX(40rem);
+}
+</style><style>.Graph {
+  overflow: hidden;
+}
+.Graph .recharts-surface {
+  height: 260px;
+}
+</style><style>.Controller {
+  bottom: 2rem;
+  position: absolute;
+  width: 38rem;
+  left: calc(50% - 19rem);
+}
+.Controller .turn-label {
+  text-align: center;
+  color: white;
+  font-weight: 600;
+  font-size: 1rem;
+  margin-bottom: 1rem;
+}
+
+.Controller .slider {
+  width: 38rem;
+  vertical-align: middle;
+  color: #f4a300;
+}
+.Controller .slider .MuiSlider-thumb {
+  width: 14px;
+  height: 14px;
+  margin-top: -5px;
+}
+.Controller .slider .MuiSlider-rail {
+  height: 4px;
+  background-color: white;
+  opacity: 1;
+}
+.Controller .slider .MuiSlider-track {
+  height: 4px;
+}
+.Controller .time-of-day {
+  color: rgba(255, 255, 255, 0.75);
+  margin-bottom: -1.25rem;
+}
+.Controller .time-of-day img {
+  width: 2.5rem;
+  margin-bottom: 2rem;
+}
+/* .Controller .nighttime, .Controller .daytime {
+  display: inline-block;
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.75rem;
+} */
+.Controller .day-icon {
+  margin: auto;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+.Controller .night-icon {
+  margin: auto;
+  display: block;
+  margin-bottom: 0.25rem;
+}
+.Controller .replay-buttons {
+  display: flex;
+  justify-content: center;
+  margin-top: 0.5rem;
+  width: 36.85rem;
+}
+.Controller .replay-buttons .speed-display {
+  width: 1rem;
+  color: white;
+  vertical-align: middle;
+  align-items: center;
+  display: flex;
+  /* padding: 12px; */
+  margin-right: 1rem;
+}
+.Controller .replay-buttons img {
+  width: 1.25rem;
+  z-index: 5;
+}
+.Controller .MuiButtonBase-root {
+  margin-right: 1rem;
+}
+.Controller .replay-buttons .pause-button {
+  margin-right: 1.5rem;
+  margin-left: 0.5rem;
+}
+
+.Controller .replay-buttons .right-arrow-icon {
+  transform: rotate(180deg);
+}
+.Controller .replay-buttons .upload-icon {
+  width: 1.5rem;
+}
+
+.Controller .replay-buttons .pause-circle-2::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.3);
+  border-radius: 50%;
+  height: 3.75rem;
+  width: 3.75rem;
+}
+.Controller .replay-buttons .pause-circle::before {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  background: white;
+  border-radius: 50%;
+  height: 3rem;
+  width: 3rem;
+}
+.Controller .replay-buttons .pause-circle,
+.Controller .replay-buttons .pause-circle-2 {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.Controller .replay-buttons .pause-circle img {
+  position: absolute;
+  width: 1rem;
+  margin-left: 1px;
+}
+</style><style>.ZoomInOut {
+  /* height: 6rem; */
+  background-color: rgba(50, 61, 52, 0.3);
+  /* box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25); */
+  border-radius: 1rem;
+  /* width: 3rem */
+}
+.ZoomInOut .zoomin,
+.ZoomInOut .zoomout {
+  position: relative;
+  display: block;
+  /* width: 100%; */
+  /* margin-left: -0.75rem; */
+}
+.ZoomInOut img {
+  width: 2rem;
+}
+</style><style>.WarningsModal .warnings-button {
+  position: absolute;
+  top: 0rem;
+  right: 0rem;
+}
+
+.WarningsModal .warnings-icon {
+  height: 1rem;
+}
+.WarningsModal .warnings-button.MuiIconButton-root {
+  padding: 0.6rem;
+}
+#warnings-modal {
+  position: absolute !important;
+  z-index: 1300;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%);
+  bottom: auto !important;
+  right: auto !important;
+}
+#warnings-panel {
+  width: 50rem;
+  padding: 2rem;
+  background-color: rgba(0, 0, 0, 0.8);
+  background-color: rgba(0, 0, 0, 0.8);
+  border-radius: 1rem;
+}
+#warnings-panel .command-row {
+  display: flex;
+  height: 2rem;
+  position: relative;
+  align-items: center;
+  margin: 0;
+}
+#warnings-panel #warnings-content div:nth-child(odd) .command-row {
+  background-color: rgba(255, 255, 255, 0.1);
+}
+#warnings-panel-title {
+  text-align: center;
+  font-weight: 700;
+}
+#warnings-content {
+  max-height: 60vh;
+  overflow-y: auto;
+}
+#warnings-close-button {
+  background-color: #f9efe2;
+  position: absolute;
+  top: -1.25rem;
+  right: -1.25rem;
+  color: #002326;
+}
+#warnings-close-button {
+  padding: 0.25rem;
+}
+#warnings-close-button svg {
+  height: 2rem;
+  width: 2rem;
+  font-size: 2rem;
+}
+</style><style>html {
+  font-size: 9.5pt;
+  background-color: #00afbd;
+}
+html,
+body,
+h1 {
+  font-family: 'Roboto', 'Helvetica', 'Arial', sans-serif;
+  color: #f9efe2;
+}
+.all-content {
+  width: 100%;
+  height: 100vh;
+}
+</style><style data-jss="" data-meta="MuiTouchRipple">
+.MuiTouchRipple-root {
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 0;
+  overflow: hidden;
+  position: absolute;
+  border-radius: inherit;
+  pointer-events: none;
+}
+.MuiTouchRipple-ripple {
+  opacity: 0;
+  position: absolute;
+}
+.MuiTouchRipple-rippleVisible {
+  opacity: 0.3;
+  animation: MuiTouchRipple-keyframes-enter 550ms cubic-bezier(0.4, 0, 0.2, 1);
+  transform: scale(1);
+}
+.MuiTouchRipple-ripplePulsate {
+  animation-duration: 200ms;
+}
+.MuiTouchRipple-child {
+  width: 100%;
+  height: 100%;
+  display: block;
+  opacity: 1;
+  border-radius: 50%;
+  background-color: currentColor;
+}
+.MuiTouchRipple-childLeaving {
+  opacity: 0;
+  animation: MuiTouchRipple-keyframes-exit 550ms cubic-bezier(0.4, 0, 0.2, 1);
+}
+.MuiTouchRipple-childPulsate {
+  top: 0;
+  left: 0;
+  position: absolute;
+  animation: MuiTouchRipple-keyframes-pulsate 2500ms cubic-bezier(0.4, 0, 0.2, 1) 200ms infinite;
+}
+@-webkit-keyframes MuiTouchRipple-keyframes-enter {
+  0% {
+    opacity: 0.1;
+    transform: scale(0);
+  }
+  100% {
+    opacity: 0.3;
+    transform: scale(1);
+  }
+}
+@-webkit-keyframes MuiTouchRipple-keyframes-exit {
+  0% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0;
+  }
+}
+@-webkit-keyframes MuiTouchRipple-keyframes-pulsate {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.92);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+</style><style data-jss="" data-meta="MuiButtonBase">
+.MuiButtonBase-root {
+  color: inherit;
+  border: 0;
+  cursor: pointer;
+  margin: 0;
+  display: inline-flex;
+  outline: 0;
+  padding: 0;
+  position: relative;
+  align-items: center;
+  user-select: none;
+  border-radius: 0;
+  vertical-align: middle;
+  -moz-appearance: none;
+  justify-content: center;
+  text-decoration: none;
+  background-color: transparent;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+.MuiButtonBase-root::-moz-focus-inner {
+  border-style: none;
+}
+.MuiButtonBase-root.Mui-disabled {
+  cursor: default;
+  pointer-events: none;
+}
+@media print {
+  .MuiButtonBase-root {
+    -webkit-print-color-adjust: exact;
+  }
+}
+</style><style data-jss="" data-meta="MuiButton">
+.MuiButton-root {
+  color: rgba(0, 0, 0, 0.87);
+  padding: 6px 16px;
+  font-size: 0.875rem;
+  min-width: 64px;
+  box-sizing: border-box;
+  transition: background-color 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,box-shadow 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms,border 250ms cubic-bezier(0.4, 0, 0.2, 1) 0ms;
+  font-family: "Roboto", "Helvetica", "Arial", sans-serif;
+  font-weight: 500;
+  line-height: 1.75;
+  border-radius: 4px;
+  letter-spacing: 0.02857em;
+  text-transform: uppercase;
+}
+.MuiButton-root:hover {
+  text-decoration: none;
+  background-color: rgba(0, 0, 0, 0.04);
+}
+.MuiButton-root.Mui-disabled {
+  color: rgba(0, 0, 0, 0.26);
+}
+@media (hover: none) {
+  .MuiButton-root:hover {
+    background-color: transparent;
+  }
+}
+.MuiButton-root:hover.Mui-disabled {
+  background-color: transparent;
+}
+.MuiButton-label {
+  width: 100%;
+  display: inherit;
+  align-items: inherit;
+  justify-content: inherit;
+}
+.MuiButton-text {
+  padding: 6px 8px;
+}
+.MuiButton-textPrimary {
+  color: #fea201;
+}
+.MuiButton-textPrimary:hover {
+  background-color: rgba(254, 162, 1, 0.04);
+}
+@media (hover: none) {
+  .MuiButton-textPrimary:hover {
+    background-color: transparent;
+  }
+}
+.MuiButton-textSecondary {
+  color: #3686FF;
+}
+.MuiButton-textSecondary:hover {
+  background-color: rgba(54, 134, 255, 0.04);
+}
+@media (hover: none) {
+  .MuiButton-textSecondary:hover {
+    background-color: transparent;
+  }
+}
+.MuiButton-outlined {
+  border: 1px solid rgba(0, 0, 0, 0.23);
+  padding: 5px 15px;
+}
+.MuiButton-outlined.Mui-disabled {
+  border: 1px solid rgba(0, 0, 0, 0.12);
+}
+.MuiButton-outlinedPrimary {
+  color: #fea201;
+  border: 1px solid rgba(254, 162, 1, 0.5);
+}
+.MuiButton-outlinedPrimary:hover {
+  border: 1px solid #fea201;
+  background-color: rgba(254, 162, 1, 0.04);
+}
+@media (hover: none) {
+  .MuiButton-outlinedPrimary:hover {
+    background-color: transparent;
+  }
+}
+.MuiButton-outlinedSecondary {
+  color: #3686FF;
+  border: 1px solid rgba(54, 134, 255, 0.5);
+}
+.MuiButton-outlinedSecondary:hover {
+  border: 1px solid #3686FF;
+  background-color: rgba(54, 134, 255, 0.04);
+}
+.MuiButton-outlinedSecondary.Mui-disabled {
+  border: 1px solid rgba(0, 0, 0, 0.26);
+}
+@media (hover: none) {
+  .MuiButton-outlinedSecondary:hover {
+    background-color: transparent;
+  }
+}
+.MuiButton-contained {
+  color: rgba(0, 0, 0, 0.87);
+  box-shadow: 0px 3px 1px -2px rgba(0,0,0,0.2),0px 2px 2px 0px rgba(0,0,0,0.14),0px 1px 5px 0px rgba(0,0,0,0.12);
+  background-color: #e0e0e0;
+}
+.MuiButton-contained:hover {
+  box-shadow: 0px 2px 4px -1px rgba(0,0,0,0.2),0px 4px 5px 0px rgba(0,0,0,0.14),0px 1px 10px 0px rgba(0,0,0,0.12);
+  background-color: #d5d5d5;
+}
+.MuiButton-contained.Mui-focusVisible {
+  box-shadow: 0px 3px 5px -1px rgba(0,0,0,0.2),0px 6px 10px 0px rgba(0,0,0,0.14),0px 1px 18px 0px rgba(0,0,0,0.12);
+}
+.MuiButton-contained:active {
+  box-shadow: 0px 5px 5px -3px rgba(0,0,0,0.2),0px 8px 10px 1px rgba(0,0,0,0.14),0px 3px 14px 2px rgba(0,0,0,0.12);
+}
+.MuiButton-contained.Mui-disabled {
+  color: rgba(0, 0, 0, 0.26);
+  box-shadow: none;
+  background-color: rgba(0, 0, 0, 0.12);
+}
+@media (hover: none) {
+  .MuiButton-contained:hover {
+    box-shadow: 0px 3px 1px -2px rgba(0,0,0,0.2),0px 2px 2px 0px rgba(0,0,0,0.14),0px 1px 5px 0px rgba(0,0,0,0.12);
+    background-color: #e0e0e0;
+  }
+}
+.MuiButton-contained:hover.Mui-disabled {
+  background-color: rgba(0, 0, 0, 0.12);
+}
+.MuiButton-containedPrimary {
+  color: rgba(0, 0, 0, 0.87);
+  background-color: #fea201;
+}
+.MuiButton-containedPrimary:hover {
+  background-color: rgb(177, 113, 0);
+}
+@media (hover: none) {
+  .MuiButton-containedPrimary:hover {
+    background-color: #fea201;
+  }
+}
+.MuiButton-containedSecondary {
+  color: #fff;
+  background-color: #3686FF;
+}
+.MuiButton-containedSecondary:hover {
+  background-color: rgb(37, 93, 178);
+}
+@media (hover: none) {
+  .MuiButton-containedSecondary:hover {
+    background-color: #3686FF;
+  }
+}
+.MuiButton-disableElevation {
+  box-shadow: none;
+}
+.MuiButton-disableElevation:hover {
+  box-shadow: none;
+}
+.MuiButton-disableElevation.Mui-focusVisible {
+  box-shadow: none;
+}
+.MuiButton-disableElevation:active {
+  box-shadow: none;
+}
+.MuiButton-disableElevation.Mui-disabled {
+  box-shadow: none;
+}
+.MuiButton-colorInherit {
+  color: inherit;
+  border-color: currentColor;
+}
+.MuiButton-textSizeSmall {
+  padding: 4px 5px;
+  font-size: 0.8125rem;
+}
+.MuiButton-textSizeLarge {
+  padding: 8px 11px;
+  font-size: 0.9375rem;
+}
+.MuiButton-outlinedSizeSmall {
+  padding: 3px 9px;
+  font-size: 0.8125rem;
+}
+.MuiButton-outlinedSizeLarge {
+  padding: 7px 21px;
+  font-size: 0.9375rem;
+}
+.MuiButton-containedSizeSmall {
+  padding: 4px 10px;
+  font-size: 0.8125rem;
+}
+.MuiButton-containedSizeLarge {
+  padding: 8px 22px;
+  font-size: 0.9375rem;
+}
+.MuiButton-fullWidth {
+  width: 100%;
+}
+.MuiButton-startIcon {
+  display: inherit;
+  margin-left: -4px;
+  margin-right: 8px;
+}
+.MuiButton-startIcon.MuiButton-iconSizeSmall {
+  margin-left: -2px;
+}
+.MuiButton-endIcon {
+  display: inherit;
+  margin-left: 8px;
+  margin-right: -4px;
+}
+.MuiButton-endIcon.MuiButton-iconSizeSmall {
+  margin-right: -2px;
+}
+.MuiButton-iconSizeSmall > *:first-child {
+  font-size: 18px;
+}
+.MuiButton-iconSizeMedium > *:first-child {
+  font-size: 20px;
+}
+.MuiButton-iconSizeLarge > *:first-child {
+  font-size: 22px;
+}
+</style><style>._flexBox_15diu_1{flex-flow:unset}._gap_extraTiny_15diu_5{gap:var(--size-extraTiny)}._gap_tiny_15diu_9{gap:var(--size-tiny)}._gap_extraSmall_15diu_13{gap:var(--size-extraSmall)}._gap_small_15diu_17{gap:var(--size-small)}._gap_medium_15diu_21{gap:var(--size-medium)}._gap_normal_15diu_25{gap:var(--size-normal)}._gap_large_15diu_29{gap:var(--size-large)}._gap_xLarge_15diu_33{gap:var(--size-xLarge)}._gap_xxLarge_15diu_37{gap:var(--size-xxLarge)}._gap_extraLarge_15diu_41{gap:var(--size-extraLarge)}._column_15diu_45{flex-direction:column!important}._flexWrap_15diu_49{flex-wrap:wrap}._qrlightbox_background_1k51k_1{background-color:#c8c8c880;width:100%;height:100%;position:fixed;z-index:2147483636;top:0;left:0}._backClose_1k51k_11{position:absolute;width:100%;height:100%;top:0;left:0}._qrImage_1k51k_19{width:200px;height:200px;background:#eee;background:linear-gradient(110deg,#ececec 8%,#f5f5f5 18%,#ececec 33%);background-size:200% 100%;animation:1.5s _shine_1k51k_1 linear infinite}._qrlightbox_extension_1k51k_28{padding:32px;background-color:#fff;z-index:2147483637;border:0;border-radius:10px}._title_1k51k_36{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:200px;font-size:16px;font-family:Arial,serif;font-weight:400;color:#000}@keyframes _shine_1k51k_1{to{background-position-x:-200%}}:root{--size-extraTiny: 2px;--size-tiny: 4px;--size-extraSmall: 6px;--size-small: 8px;--size-medium: 16px;--size-normal: 24px;--size-large: 32px;--size-xLarge: 48px;--size-xxLarge: 56px;--size-extraLarge: 64px;--font-size-tiny: 12px;--font-size-small: 16px;--font-size-medium: 18px;--font-size-large: 32px;--weight-thin: 100;--weight-extraLight: 200;--weight-light: 300;--weight-normal: 400;--weight-medium: 500;--weight-semiBold: 600;--weight-bold: 700;--weight-extraBold: 800}._qrlightbox_background_ffyms_1{background-color:#c8c8c880;width:100%;height:100%;position:fixed;z-index:2147483636;top:0;left:0}._backClose_ffyms_11{position:absolute;width:100%;height:100%;top:0;left:0}._qrImage_ffyms_19{width:200px;height:200px;background:#eee;background:linear-gradient(110deg,#ececec 8%,#f5f5f5 18%,#ececec 33%);background-size:200% 100%;animation:1.5s _shine_ffyms_1 linear infinite}._qrlightbox_extension_ffyms_28{padding:32px;background-color:#fff;z-index:2147483637;border:0;border-radius:10px}._title_ffyms_36{white-space:nowrap;overflow:hidden;text-overflow:ellipsis;width:200px;font-size:16px;font-family:Arial,serif;font-weight:400;color:#000;margin:0}@keyframes _shine_ffyms_1{to{background-position-x:-200%}}
+</style>
+</head>
+<body style="">
+  <div id="root">
+    <div class="all-content">
+      <div class="Game">
+        <div id="content"></div>
+        <div class="upload-no-replay-wrapper"><p>Welcome to the Lux AI Season 1 Visualizer</p><div>
+          <button class="MuiButtonBase-root MuiButton-root MuiButton-contained upload-btn MuiButton-containedSecondary" tabindex="0" type="button"><span class="MuiButton-label"><span class="upload-text">Upload a replay</span><img class="upload-icon-no-replay" src="data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTgiIGhlaWdodD0iMTQiIHZpZXdCb3g9IjAgMCAxOCAxNCIgZmlsbD0ibm9uZSIgeG1sbnM9Imh0dHA6Ly93d3cudzMub3JnLzIwMDAvc3ZnIj4KPHBhdGggZmlsbC1ydWxlPSJldmVub2RkIiBjbGlwLXJ1bGU9ImV2ZW5vZGQiIGQ9Ik0xMi42NjY3IDEwLjI5MTdWMTEuODc1SDEzLjQ1ODNDMTUuNjQ0NSAxMS44NzUgMTcuNDE2NyAxMC4xMDI4IDE3LjQxNjcgNy45MTY2N0MxNy40MTY3IDUuOTI1NTkgMTUuOTQ2NiA0LjI3Nzg3IDE0LjAzMjYgMy45OTk2OUMxMy4zNTk0IDEuNjY2OTUgMTEuMjA4OSAwIDguNzA4MzMgMEM2Ljg1MDY0IDAgNS4xNTI5NyAwLjkyMjM0OSA0LjEzMjQxIDIuNDE0OEMxLjc5NDczIDIuNzE4MTYgMCA0LjcxNzM2IDAgNy4xMjVDMCA5Ljc0ODM1IDIuMTI2NjUgMTEuODc1IDQuNzUgMTEuODc1VjEwLjI5MTdDMy4wMDExIDEwLjI5MTcgMS41ODMzMyA4Ljg3MzkgMS41ODMzMyA3LjEyNUMxLjU4MzMzIDUuNDIzMjcgMi45Mjg2NCA0LjAyNzMzIDQuNjIzMDYgMy45NjA4Mkw1LjA1OTI3IDMuOTQzN0w1LjI3NzU4IDMuNTY1NjVDNS45ODA0OSAyLjM0ODQyIDcuMjc3MzIgMS41ODMzMyA4LjcwODMzIDEuNTgzMzNDMTAuNjQ4OCAxLjU4MzMzIDEyLjI5NDkgMi45ODk1NCAxMi42MTIgNC44ODE1NEwxMi43MjUxIDUuNTU2MDZMMTMuNDA4OCA1LjU0MjE3QzEzLjQzMzUgNS41NDE3NSAxMy40MzM1IDUuNTQxNzUgMTMuNDU4MyA1LjU0MTY3QzE0Ljc3IDUuNTQxNjcgMTUuODMzMyA2LjYwNDk5IDE1LjgzMzMgNy45MTY2N0MxNS44MzMzIDkuMjI4MzQgMTQuNzcgMTAuMjkxNyAxMy40NTgzIDEwLjI5MTdIMTIuNjY2N1pNOS40OTk5OCAxMy40NTgzVjguMjQ0NThMMTEuMzE1MiAxMC4wNTk4TDEyLjQzNDggOC45NDAyTDguNzA4MzIgNS4yMTM3NEw0Ljk4MTg2IDguOTQwMkw2LjEwMTQ0IDEwLjA1OThMNy45MTY2NSA4LjI0NDU4VjEzLjQ1ODNIOS40OTk5OFoiIGZpbGw9IiNGRkYiLz4KPC9zdmc+Cg=="></span><span class="MuiTouchRipple-root"></span></button>
+          <p></p>
+          <input accept=".json, .luxr" type="file" style="display: none;">
+        </div>
+      </div>
+      <div id="version-number">
+        <strong>Client Version: </strong>3.1.0
+      </div>
+    </div>
+  </div>
+</div>
+<script src="./vendors~app~phaser.js"></script>
+<script src="./vendors~app.js"></script>
+<script src="./replayAnalyzer.js"></script>
+<script src="./app.js"></script>
+<script src="./phaser.js"></script>
+<div id="coverTemperature" style="background-color: rgb(255, 255, 255); opacity: 0; display: block;"></div></body></html>
