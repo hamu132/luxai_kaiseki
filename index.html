@@ -8,9 +8,11 @@
 
 <body>
 
+<h1>Lux AI Replay Analysis</h1>
+
 <input type="file" id="fileInput">
 
-<pre id="output"></pre>
+<div id="output"></div>
 
 <script>
 const fileInput = document.getElementById("fileInput");
@@ -23,18 +25,48 @@ fileInput.addEventListener("change", async () => {
         return;
     }
 
+    output.textContent = "解析中...";
+
     const formData = new FormData();
     formData.append("file", file);
 
-    const response = await fetch("http://localhost:8000/upload", {
-        method: "POST",
-        body: formData
-    });
+    try {
+        const response = await fetch("http://localhost:8000/upload", {
+            method: "POST",
+            body: formData
+        });
 
-    const data = await response.json();
+        const data = await response.json();
 
-    output.textContent = data.content;
+        if (data.error) {
+            output.textContent = `エラー: ${data.error}`;
+            return;
+        }
+
+        const player0Turn = data.first_city_build["0"];
+        const player1Turn = data.first_city_build["1"];
+
+        output.innerHTML = `
+            <h2>解析結果</h2>
+
+            <p>Player 0：${formatTurn(player0Turn)}</p>
+            <p>Player 1：${formatTurn(player1Turn)}</p>
+        `;
+
+    } catch (error) {
+        output.textContent =
+            `通信エラー: ${error.message}`;
+    }
 });
+
+
+function formatTurn(turn) {
+    if (turn === null) {
+        return "都市建設なし";
+    }
+
+    return `Turn ${turn}`;
+}
 </script>
 
 </body>
