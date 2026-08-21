@@ -140,6 +140,22 @@ class ReplayAnalyzer {
         return this.getResearchReachedTurn(team, 200);
     }
 
+    getResearchCurve(team) {
+        const curve = [];
+
+        for (let frameIndex = 0; frameIndex < this.frames.length; frameIndex++) {
+            const researchPoints =
+            this.getTeamState(frameIndex, team)?.researchPoints ?? 0;
+
+            curve.push({
+                turn: frameIndex,
+                researchPoints: researchPoints,
+            });
+        }
+
+        return curve;
+    }
+
     /**
      * City Tile 数
      */
@@ -226,6 +242,9 @@ class ReplayAnalyzer {
     analyzeTeam(team) {
         return {
             team,
+
+            researchCurve:
+                this.getResearchCurve(team),
 
             firstWoodCollection:
                 this.getFirstWoodCollection(team),
@@ -366,13 +385,7 @@ function renderReplayAnalysis(result) {
     panel.innerHTML = `
         <div
             id="replay-analysis-header"
-            style="
-                padding: 12px 16px;
-                cursor: move;
-                user-select: none;
-                font-weight: bold;
-                border-bottom: 1px solid rgba(255,255,255,0.2);
-            "
+            ...
         >
             Replay Analysis
         </div>
@@ -386,8 +399,169 @@ function renderReplayAnalysis(result) {
         >
             ${createTeamHTML(result.teams[0])}
             ${createTeamHTML(result.teams[1])}
+
+            <canvas id="research-chart" width="360" height="180"></canvas>
         </div>
     `;
+    // research curve
+    const canvas = document.getElementById("research-chart");
+    const ctx = canvas.getContext("2d");
+
+    const team0 = result.teams[0].researchCurve;
+    const team1 = result.teams[1].researchCurve;
+
+    const padding = 40;
+    const chartWidth = canvas.width - padding * 2;
+    const chartHeight = canvas.height - padding * 2;
+
+    const maxTurn = Math.max(
+        team0[team0.length - 1]?.turn ?? 0,
+        team1[team1.length - 1]?.turn ?? 0
+    );
+
+    const maxRP = Math.max(
+        ...team0.map(d => d.researchPoints),
+        ...team1.map(d => d.researchPoints),
+        200
+    );
+
+    const drawLine = (data, color) => {
+        ctx.beginPath();
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 2;
+
+        data.forEach((point, index) => {
+            const x =
+                padding +
+                (point.turn / maxTurn) * chartWidth;
+
+            const y =
+                canvas.height -
+                padding -
+                (point.researchPoints / maxRP) * chartHeight;
+
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
+            }
+        });
+
+        ctx.stroke();
+    };
+
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+    drawLine(team0, "#FFD700"); // Team 0: yellow
+    drawLine(team1, "#1E90FF"); // Team 1: blue
+    // ===== Title =====
+    ctx.fillStyle = "white";
+    ctx.font = "bold 14px sans-serif";
+    ctx.textAlign = "center";
+
+    ctx.fillText(
+        "Research Points vs Turn",
+        canvas.width / 2,
+        18
+    );
+
+
+    // ===== X / Y Axis =====
+    ctx.strokeStyle = "white";
+    ctx.lineWidth = 1;
+
+    ctx.beginPath();
+
+    // Y axis
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, canvas.height - padding);
+
+    // X axis
+    ctx.lineTo(canvas.width - padding, canvas.height - padding);
+
+    ctx.stroke();
+
+
+    // ===== X Axis Ticks =====
+    ctx.fillStyle = "white";
+    ctx.font = "10px sans-serif";
+    ctx.textAlign = "center";
+
+    const xTickStep = 50;
+
+    for (let turn = 0; turn <= maxTurn; turn += xTickStep) {
+
+        const x =
+            padding +
+            (turn / maxTurn) * chartWidth;
+
+        // tick mark
+        ctx.beginPath();
+        ctx.moveTo(x, canvas.height - padding);
+        ctx.lineTo(x, canvas.height - padding + 4);
+        ctx.stroke();
+
+        // number
+        ctx.fillText(
+            turn.toString(),
+            x,
+            canvas.height - padding + 14
+        );
+    }
+
+
+    // ===== Y Axis Ticks =====
+    ctx.textAlign = "right";
+
+    const yTickStep = 50;
+
+    for (let rp = 0; rp <= maxRP; rp += yTickStep) {
+
+        const y =
+            canvas.height -
+            padding -
+            (rp / maxRP) * chartHeight;
+
+        // tick mark
+        ctx.beginPath();
+        ctx.moveTo(padding - 4, y);
+        ctx.lineTo(padding, y);
+        ctx.stroke();
+
+        // number
+        ctx.fillText(
+            rp.toString(),
+            padding - 7,
+            y + 3
+        );
+    }
+
+
+    // ===== X Axis Label =====
+    ctx.textAlign = "center";
+    ctx.font = "11px sans-serif";
+
+    ctx.fillText(
+        "Turn",
+        canvas.width / 2,
+        canvas.height - 3
+    );
+
+
+    // ===== Y Axis Label =====
+    ctx.save();
+
+    ctx.translate(10, canvas.height / 2);
+    ctx.rotate(-Math.PI / 2);
+
+    ctx.textAlign = "center";
+    ctx.fillText(
+        "Research Points",
+        0,
+        0
+    );
+
+    ctx.restore();
 }
 
 function enableDrag(panel) {
